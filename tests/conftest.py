@@ -49,3 +49,28 @@ remediation:
     p = tmp_path / "product_price_v2.yaml"
     p.write_text(content)
     return str(p)
+
+
+@pytest.fixture
+def obs_db_path(tmp_path) -> str:
+    return str(tmp_path / "test_obs.duckdb")
+
+
+@pytest.fixture
+def sample_parquet(tmp_path) -> str:
+    import pandas as pd
+    import numpy as np
+    from datetime import datetime, timezone, timedelta
+
+    rng = np.random.default_rng(42)
+    n = 200
+    now = datetime.now(timezone.utc)
+    df = pd.DataFrame({
+        "product_id": [f"PROD{i:04d}AB" for i in range(n)],
+        "price_mad": rng.uniform(1.0, 9000.0, n),
+        "store_id": rng.choice(["jumia", "hmizate", "avito", "marjane"], n).tolist(),
+        "scraped_at": pd.Series([now - timedelta(minutes=i % 20) for i in range(n)]),
+    })
+    path = str(tmp_path / "sample.parquet")
+    df.to_parquet(path, index=False)
+    return path
