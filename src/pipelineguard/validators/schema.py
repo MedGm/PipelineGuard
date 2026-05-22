@@ -94,7 +94,7 @@ class PatternValidator:
             if field.pattern is None or field.name not in df.columns:
                 continue
             series = df[field.name].dropna().astype(str)
-            mismatches = int((~series.str.match(field.pattern)).sum())
+            mismatches = int((~series.str.fullmatch(field.pattern)).sum())
             if mismatches > 0:
                 violations.append(Violation(
                     field=field.name, validator=self.name, severity="FAIL",
