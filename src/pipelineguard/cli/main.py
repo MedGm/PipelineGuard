@@ -1,4 +1,6 @@
 import typer
+import yaml
+from pydantic import ValidationError
 from pipelineguard.contracts.registry import ContractRegistry
 from pipelineguard.exceptions import ContractNotFound, ContractVersionExists
 
@@ -50,6 +52,9 @@ def contract_register(path: str, db: str = _DB):
         contract = registry.register(path)
         typer.echo(f"Registered {contract.contract_id} v{contract.version}")
     except ContractVersionExists as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(code=1)
+    except (FileNotFoundError, ValidationError, yaml.YAMLError) as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(code=1)
 

@@ -90,6 +90,38 @@ def test_diff_shows_added_field(yaml_files):
     assert "store" in result.output
 
 
+def test_diff_shows_breaking_change(yaml_files, tmp_path):
+    # Register v1, then v3 with a type change on 'price' (breaking)
+    v3_content = """\
+contract_id: test_contract
+version: 3.0.0
+owner: test-owner
+description: breaking type change
+schema:
+  fields:
+    - name: price
+      type: string
+      nullable: false
+"""
+    v3 = tmp_path / "v3.yaml"
+    v3.write_text(v3_content)
+
+    runner.invoke(app, ["contract", "register", yaml_files["v1"], "--db", yaml_files["db"]])
+    runner.invoke(app, ["contract", "register", str(v3), "--db", yaml_files["db"]])
+    result = runner.invoke(
+        app,
+        ["contract", "diff", "test_contract", "--from", "1.0.0", "--to", "3.0.0", "--db", yaml_files["db"]],
+    )
+    assert result.exit_code == 0
+    assert "BREAKING" in result.output
+    assert "price" in result.output
+
+
+def test_register_missing_file_exits_nonzero(yaml_files):
+    result = runner.invoke(app, ["contract", "register", "/nonexistent/path.yaml", "--db", yaml_files["db"]])
+    assert result.exit_code != 0
+
+
 @pytest.mark.parametrize("cmd", ["validate", "drift", "quarantine", "tune", "dashboard"])
 def test_stubs_exit_zero_and_print_not_implemented(cmd):
     result = runner.invoke(app, [cmd])
