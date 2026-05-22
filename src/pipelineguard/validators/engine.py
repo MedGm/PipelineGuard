@@ -3,7 +3,6 @@ import time
 from datetime import datetime, timezone
 from uuid import uuid4
 
-import numpy as np
 import pandas as pd
 
 from pipelineguard.contracts.models import DataContract
@@ -92,7 +91,7 @@ class Validator:
     ) -> ValidationResult:
         t0 = time.perf_counter()
         run_id = str(uuid4())
-        batch_id = batch_id or str(uuid4())
+        resolved_batch_id = batch_id if batch_id is not None else str(uuid4())
 
         field_stats = _compute_field_stats(df, self._contract, run_id)
         baselines = {
@@ -112,7 +111,7 @@ class Validator:
             run_id=run_id,
             contract_id=self._contract.contract_id,
             contract_version=self._contract.version,
-            batch_id=batch_id,
+            batch_id=resolved_batch_id,
             timestamp=datetime.now(timezone.utc),
             status=_derive_status(violations),
             row_count=len(df),
