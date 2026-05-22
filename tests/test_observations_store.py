@@ -104,3 +104,33 @@ def test_list_runs_respects_limit(store):
 
 def test_list_runs_unknown_contract_returns_empty(store):
     assert store.list_runs("no_such_contract") == []
+
+
+def test_get_baseline_returns_most_recent(store):
+    fs1 = FieldStats(
+        run_id="run-1", contract_id="test_contract", field_name="price",
+        timestamp="2026-05-22T10:00:00+00:00",
+        row_count=100, null_fraction=0.0, mean=100.0, std=10.0,
+    )
+    fs2 = FieldStats(
+        run_id="run-2", contract_id="test_contract", field_name="price",
+        timestamp="2026-05-22T12:00:00+00:00",
+        row_count=200, null_fraction=0.0, mean=200.0, std=20.0,
+    )
+    store.write_field_stats("run-1", "test_contract", [fs1])
+    store.write_field_stats("run-2", "test_contract", [fs2])
+    baseline = store.get_baseline("test_contract", "price")
+    assert baseline.mean == pytest.approx(200.0)
+
+
+def test_get_baseline_none_fields_round_trip(store):
+    fs = FieldStats(
+        run_id="run-1", contract_id="test_contract", field_name="flag",
+        timestamp="2026-05-22T12:00:00+00:00",
+        row_count=50, null_fraction=0.0,
+    )
+    store.write_field_stats("run-1", "test_contract", [fs])
+    baseline = store.get_baseline("test_contract", "flag")
+    assert baseline is not None
+    assert baseline.sample_values is None
+    assert baseline.value_counts is None
