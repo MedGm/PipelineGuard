@@ -4,7 +4,6 @@ from pipelineguard.exceptions import (
     PipelineGuardError,
     ContractNotFound,
     ContractVersionExists,
-    InvalidSemverBump,
 )
 
 __all__ = [
@@ -15,5 +14,4 @@ __all__ = [
     "PipelineGuardError",
     "ContractNotFound",
     "ContractVersionExists",
-    "InvalidSemverBump",
 ]

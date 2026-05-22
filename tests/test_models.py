@@ -135,3 +135,10 @@ def test_contract_diff_model():
         minor_changes=["field 'store' added"],
     )
     assert diff.minor_changes[0] == "field 'store' added"
+
+
+def test_extra_field_in_freshness_raises():
+    data = yaml.safe_load(VALID_YAML)
+    data["freshness"]["typo_key"] = "oops"
+    with pytest.raises(ValidationError):
+        DataContract.model_validate(data)

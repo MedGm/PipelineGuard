@@ -19,14 +19,17 @@ class FieldSpec(BaseModel):
 
 
 class SchemaSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     fields: list[FieldSpec]
 
 
 class FreshnessSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     max_delay_minutes: int
 
 
 class RemediationSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     on_schema_violation: Literal[
         "quarantine", "alert", "soft_block", "alert_and_continue"
     ] = "alert"
@@ -69,7 +72,7 @@ class ContractSummary(BaseModel):
 
 class BreakingChange(BaseModel):
     field_name: str
-    change_type: Literal["removed", "type_changed", "renamed"]
+    change_type: Literal["removed", "type_changed"]  # "renamed" deferred to Phase 1
     detail: str
 
 

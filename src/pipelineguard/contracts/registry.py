@@ -7,7 +7,7 @@ import yaml
 
 from pipelineguard._db import get_connection
 from pipelineguard.contracts.models import DataContract, ContractSummary, ContractDiff
-from pipelineguard.contracts.versioning import classify_diff, latest_version, validate_bump
+from pipelineguard.contracts.versioning import classify_diff, latest_version, parse_version, validate_bump
 from pipelineguard.exceptions import ContractNotFound, ContractVersionExists
 
 
@@ -83,9 +83,8 @@ class ContractRegistry:
         try:
             rows = conn.execute(
                 "SELECT contract_id, version, owner, description FROM contracts"
-                " ORDER BY contract_id, version"
             ).fetchall()
-            return [
+            summaries = [
                 ContractSummary(
                     contract_id=r["contract_id"],
                     version=r["version"],
@@ -96,6 +95,7 @@ class ContractRegistry:
             ]
         finally:
             conn.close()
+        return sorted(summaries, key=lambda s: (s.contract_id, parse_version(s.version)))
 
     def diff(self, contract_id: str, from_version: str, to_version: str) -> ContractDiff:
         conn = get_connection(self._db_path)
