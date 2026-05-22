@@ -97,8 +97,34 @@ def test_contract_summary_model():
     assert s.contract_id == "x"
 
 def test_breaking_change_model():
-    bc = BreakingChange(field="price", change_type="removed", detail="field removed")
+    bc = BreakingChange(field_name="price", change_type="removed", detail="field removed")
     assert bc.change_type == "removed"
+
+
+def test_semver_leading_zeros_raises():
+    data = yaml.safe_load(VALID_YAML)
+    data["version"] = "01.0.0"
+    with pytest.raises(ValidationError):
+        DataContract.model_validate(data)
+
+
+def test_extra_field_in_contract_raises():
+    data = yaml.safe_load(VALID_YAML)
+    data["nonexistent_field"] = "oops"
+    with pytest.raises(ValidationError):
+        DataContract.model_validate(data)
+
+
+def test_extra_field_in_field_spec_raises():
+    data = yaml.safe_load(VALID_YAML)
+    data["schema"]["fields"][0]["typo_field"] = "oops"
+    with pytest.raises(ValidationError):
+        DataContract.model_validate(data)
+
+
+def test_breaking_change_uses_field_name():
+    bc = BreakingChange(field_name="price", change_type="removed", detail="field removed")
+    assert bc.field_name == "price"
 
 def test_contract_diff_model():
     diff = ContractDiff(

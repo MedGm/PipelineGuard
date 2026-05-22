@@ -3,10 +3,12 @@ import re
 from typing import Any, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-_SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
+_SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
 
 class FieldSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str
     type: Literal["string", "integer", "float", "boolean", "timestamp"]
     nullable: bool = True
@@ -39,7 +41,7 @@ class RemediationSpec(BaseModel):
 
 
 class DataContract(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
     contract_id: str
     version: str
@@ -66,7 +68,7 @@ class ContractSummary(BaseModel):
 
 
 class BreakingChange(BaseModel):
-    field: str
+    field_name: str
     change_type: Literal["removed", "type_changed", "renamed"]
     detail: str
 
