@@ -113,10 +113,14 @@ def test_load_specific_version(registry, tmp_path):
 
 def test_load_no_version_returns_semver_latest(registry, tmp_path):
     # Register patch first, then base — latest must still be 1.0.1
+    # Registering 1.0.0 after 1.0.1 triggers an expected semver bump warning
+    # (1.0.1 -> 1.0.0 removes the 'store' field). Suppress it.
     write_patch = write(tmp_path, "patch.yaml", V1_PATCH_YAML)
     write_v1 = write(tmp_path, "v1.yaml", V1_YAML)
     registry.register(write_patch)
-    registry.register(write_v1)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        registry.register(write_v1)
     latest = registry.load("product_price")
     assert latest.version == "1.0.1"
 
