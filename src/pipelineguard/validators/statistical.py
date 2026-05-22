@@ -8,7 +8,7 @@ import pandas as pd
 from pipelineguard.contracts.models import DataContract
 from pipelineguard.validators.base import FieldStats, Violation
 
-_KS_ALPHA = {"low": 0.001, "medium": 0.05, "high": 0.10}
+_DRIFT_ALPHA = {"low": 0.001, "medium": 0.05, "high": 0.10}
 _PSI_WARN = {"low": 0.25, "medium": 0.10, "high": 0.05}
 
 
@@ -59,7 +59,7 @@ class KSTestValidator:
             reference = np.array(baseline.sample_values)
             if len(current) < 5 or len(reference) < 5:
                 continue
-            alpha = _KS_ALPHA.get(_sensitivity(contract, field_name), 0.05)
+            alpha = _DRIFT_ALPHA.get(_sensitivity(contract, field_name), 0.05)
             stat, p_value = scipy_stats.ks_2samp(reference, current)
             if p_value < alpha:
                 violations.append(Violation(
@@ -165,11 +165,17 @@ class ChiSquaredValidator:
             n = int(df[field_name].dropna().shape[0])
             if n == 0:
                 continue
-            alpha = _KS_ALPHA.get(_sensitivity(contract, field_name), 0.05)
+            alpha = _DRIFT_ALPHA.get(_sensitivity(contract, field_name), 0.05)
             current_vc = df[field_name].dropna().astype(str).value_counts(normalize=True)
             categories = list(baseline.value_counts.keys())
             ref_fracs = np.array([baseline.value_counts[c] for c in categories])
-            cur_fracs = np.array([current_vc.get(c, 0.0) for c in categories])
+            # Clip current fractions to known categories only; unseen categories
+            # are treated as belonging to the "known" distribution for chi-squared.
+            cur_fracs = np.array([float(current_vc.get(c, 0.0)) for c in categories])
+            # Renormalize observed to match expected total (handles unseen categories)
+            cur_sum = cur_fracs.sum()
+            if cur_sum > 0:
+                cur_fracs = cur_fracs / cur_sum
             expected = ref_fracs * n
             if (expected < 5).any():
                 continue
