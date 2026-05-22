@@ -6,11 +6,15 @@ if TYPE_CHECKING:
 
 
 def parse_version(v: str) -> tuple[int, int, int]:
-    major, minor, patch = v.split(".")
-    return (int(major), int(minor), int(patch))
+    parts = v.split(".")
+    if len(parts) != 3:
+        raise ValueError(f"Expected MAJOR.MINOR.PATCH, got {v!r}")
+    return (int(parts[0]), int(parts[1]), int(parts[2]))
 
 
 def latest_version(versions: list[str]) -> str:
+    if not versions:
+        raise ValueError("versions list must not be empty")
     return max(versions, key=parse_version)
 
 
@@ -39,6 +43,8 @@ def classify_diff(old: "DataContract", new: "DataContract") -> "ContractDiff":
                     f"{field.type!r} to {new_fields[name].type!r}"
                 ),
             ))
+        # Note: nullable, min, max, pattern, allowed_values changes are not
+        # classified as breaking in Phase 0. Phase 1 validators will enforce these.
 
     for name in new_fields:
         if name not in old_fields:
