@@ -122,7 +122,7 @@ def test_register_missing_file_exits_nonzero(yaml_files):
     assert result.exit_code != 0
 
 
-@pytest.mark.parametrize("cmd", ["validate", "drift", "quarantine", "tune", "dashboard"])
+@pytest.mark.parametrize("cmd", ["drift", "quarantine", "tune", "dashboard"])
 def test_stubs_exit_zero_and_print_not_implemented(cmd):
     result = runner.invoke(app, [cmd])
     assert result.exit_code == 0

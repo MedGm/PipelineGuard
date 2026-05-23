@@ -1,8 +1,11 @@
 import typer
 import yaml
+import pandas as pd
 from pydantic import ValidationError
 from pipelineguard.contracts.registry import ContractRegistry
 from pipelineguard.exceptions import ContractNotFound, ContractVersionExists
+from pipelineguard.validators.engine import Validator
+from pipelineguard.store.observations import ObservationsStore
 
 app = typer.Typer(name="pg", help="PipelineGuard — ML pipeline data contract engine")
 contract_app = typer.Typer(help="Manage data contracts")
@@ -86,9 +89,53 @@ def contract_diff(
 
 
 @app.command()
-def validate():
-    """[Phase 1] Validate a dataset against a contract."""
-    typer.echo("[Phase 1] not yet implemented")
+def validate(
+    contract_id: str = typer.Option(..., "--contract", help="Contract ID to validate against"),
+    file: str = typer.Option(..., "--file", help="Path to Parquet file"),
+    explain: bool = typer.Option(False, "--explain", help="Show suggestions for violations"),
+    batch_id: str = typer.Option(None, "--batch-id", help="Batch identifier"),
+    db: str = typer.Option("./pipelineguard.db", "--db", help="Path to PipelineGuard database"),
+    obs: str = typer.Option("./observations.duckdb", "--obs", help="Path to observations DuckDB"),
+):
+    """Validate a dataset against a contract."""
+    registry = ContractRegistry(db_path=db)
+    try:
+        contract = registry.load(contract_id)
+    except ContractNotFound as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(code=2)
+    except Exception as e:
+        typer.echo(f"Error loading contract: {e}", err=True)
+        raise typer.Exit(code=2)
+
+    try:
+        df = pd.read_parquet(file)
+    except FileNotFoundError:
+        typer.echo(f"Error: File not found: {file}", err=True)
+        raise typer.Exit(code=2)
+    except Exception as e:
+        typer.echo(f"Error reading file: {e}", err=True)
+        raise typer.Exit(code=2)
+
+    store = ObservationsStore(db_path=obs)
+    validator = Validator(contract=contract, obs_store=store)
+    result = validator.validate(df, batch_id=batch_id)
+
+    typer.echo(f"Run ID: {result.run_id}")
+    typer.echo(f"Status: {result.status}")
+    typer.echo(f"Rows: {result.row_count}")
+    typer.echo(f"Duration: {result.duration_ms:.1f}ms")
+
+    if result.violations:
+        typer.echo(f"\nViolations ({len(result.violations)}):")
+        for v in result.violations:
+            field_label = v.field or "(batch)"
+            typer.echo(f"  [{v.severity}] {field_label}: {v.message}")
+            if explain and v.suggestion:
+                typer.echo(f"         -> {v.suggestion}")
+
+    if result.status == "FAIL":
+        raise typer.Exit(code=1)
     raise typer.Exit(code=0)
 
 

@@ -5,6 +5,8 @@ from pipelineguard.exceptions import (
     ContractNotFound,
     ContractVersionExists,
 )
+from pipelineguard.validators.base import ValidationResult, Violation
+from pipelineguard.validators.engine import Validator
 
 __all__ = [
     "DataContract",
@@ -14,4 +16,7 @@ __all__ = [
     "PipelineGuardError",
     "ContractNotFound",
     "ContractVersionExists",
+    "ValidationResult",
+    "Violation",
+    "Validator",
 ]
